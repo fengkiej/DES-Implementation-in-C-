@@ -63,14 +63,20 @@ int main(int argc, char **argv)
 	string key; 
 	string plaintext; 
 	
-	cout << "Key: ";
+	cout << "Key (must be =< 8 characters): ";
 	cin >> key;
 	
 	cout << "Plaintext: ";
 	cin >> plaintext;
 	
-	vector<char> cipherText = DESencrypt(key, plaintext);
-	printVector(cipherText);
+	int s = 0, e = 8;
+	for(int i = 0; i <= plaintext.size()/8; i++){
+		string substring(plaintext.begin()+s, plaintext.end()+e);
+		vector<char> cipherText = DESencrypt(key, substring);
+		printVector(cipherText);
+		
+		s+=8; e+=8;
+	}
 	cout << endl;
 	
 	//TODO: This code can be made more efficient using pointers and deque!
