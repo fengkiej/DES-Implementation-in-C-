@@ -32,10 +32,15 @@ vector<char> vectorLo(vector<char>&);
 vector<char> vectorHi(vector<char>&);
 vector<char> strToBinary(string&);
 vector<char> addPadding(vector<char>&);
-vector<char> rearrangeVector(vector<char>&, const string&, int);
+vector<char> rearrangeVector(vector<char>, const string&, int);
 vector<char> xorVect(vector<char>&, vector<char>&);
 vector<char> decToBin(int&);
-vector<char> setToPrintableAscii(vector<int>&);
+vector<char> setToPrintableAscii(vector<int>);
+vector<int> revertPrintableAscii(vector<char>);
+vector<int> bin8ToInt(vector<char>&);
+vector<char> intToBin(vector<int>&);
+vector<char> decToBin6(int&);
+vector<char> strToVectorChar(string&);
 string binToStr(vector<char>&);
 void printVector(vector<char>&);
 char xorChr(char&, char&);
@@ -55,30 +60,57 @@ vector<char> putToSBoxes(vector<char>&);
 vector<char> invInitialPermutation(vector<char>&);
 vector<char> rounds(vector<char>&, vector<char>&);
 vector<char> DESencrypt(string&, string&);
+vector<char> DESdecrypt(string&, string&);
 string getSBox(int&);
 int getSBoxVal(string, int&, int&);
 
+//TODO: Put method definitions!
+//TODO: fix the decToBin function!
 int main(int argc, char **argv)
 {
+	int c;
 	string key; 
-	string plaintext; 
+	string text;
 	
-	cout << "Key (must be =< 8 characters): ";
-	cin >> key;
-	
-	cout << "Plaintext: ";
-	cin >> plaintext;
-	
-	int s = 0, e = 8;
-	for(int i = 0; i <= plaintext.size()/8; i++){
-		string substring(plaintext.begin()+s, plaintext.end()+e);
-		vector<char> cipherText = DESencrypt(key, substring);
-		printVector(cipherText);
+	cout << "1. Encrypt\n" << "2. Decrypt\n" << "Put choice: ";
+
+	cin >> c;
+	if(c == 1){
+		cout << "Key (must be =< 8 characters): ";
+		cin >> key;
 		
-		s+=8; e+=8;
+		cout << "Plaintext: ";
+		cin.ignore(); cin.clear();
+		getline(cin, text);
+		
+		int s = 0, e = 8;
+		for(int i = 0; i <= text.size()/8; i++){
+			string substring(text.begin()+s, text.begin()+e);
+			vector<char> cipherText = DESencrypt(key, substring);
+			printVector(cipherText);
+			s+=8; e+=8;
+		}
+	} else if(c == 2) {
+		cout << "Key (must be =< 8 characters): ";
+		cin >> key;
+		
+		cout << "Ciphertext: ";
+		cin.ignore(); cin.clear();
+		getline(cin, text);
+		
+		int s = 0, e = 12;
+		for(int i = 0; i < text.size()/11; i++){
+			string substring(text.begin()+s, text.begin()+e);
+			vector<char> cipherText = DESdecrypt(key, substring);
+			printVector(cipherText);
+			s+=11; e+=11;
+		}
+	} else {
+		cout << "INPUT IS WRONG";
 	}
-	cout << endl;
 	
+	cout << endl;
+		
 	//TODO: This code can be made more efficient using pointers and deque!
 	return 0;
 }
@@ -168,14 +200,14 @@ vector<char> generateKn(int n, vector<char>& v){
 	return rearrangeVector(CnDn, PC2, 48);
 }
 
-vector<char> rearrangeVector(vector<char>& v, const string& filename, int size){
+vector<char> rearrangeVector(vector<char> v, const string& filename, int size){
 	vector<char> vNew(size);
 	int i = 0;
 	int index;
 	
 	fstream open((ROOT_DIR+filename).c_str());
 	while(open >> index){
-		vNew[index - 1] = v[i];
+		vNew[i] = v[index - 1];
 		i++;
 	}
 	
@@ -204,12 +236,32 @@ vector<char> rounds(vector<char>& v, vector<char>& kPlus){
 	return concat(R, L);
 }
 
+//not in header yet
+vector<char> roundsInv(vector<char>& v, vector<char>& kPlus){
+	vector<char> L = vectorLo(v);
+	vector<char> R = vectorHi(v);
+	
+	for(int i = 16; i >= 1; i--){
+		vector<char> Ln, Rn, Kn, f;
+		Kn = generateKn(i, kPlus);
+		Ln = R;
+		f = feistel(R, Kn);
+		Rn = xorVect(L, f);
+		
+		L = Ln;
+		R = Rn;
+	}
+	
+	return concat(R, L);
+}
+
 vector<char> feistel(vector<char>& v, vector<char>& K){
-	vector<char> eV = expand(v);
+	vector<char> eV = expand(v);	
 	vector<char> B = xorVect(K, eV);
 	vector<char> SB = putToSBoxes(B);
+	vector<char> P = rearrangeVector(SB, PERMUTATION, 32);
 	
-	return rearrangeVector(SB, PERMUTATION, 32);
+	return P;
 }
 
 vector<char> expand(vector<char>& v){
@@ -234,9 +286,9 @@ vector<char> decToBin(int& n){
 		char bit;
 		(n % 2)? bit = '1':bit = '0';
 		bin.insert(bin.begin(), bit);
-		
 		n /= 2;
 	}
+	vector<char>(bin).swap(bin);
 	
 	return bin;
 }
@@ -273,7 +325,12 @@ vector<char> subvectToSBoxN(int& n, vector<char>& v){
 	
 	int sBoxVal = getSBoxVal(SBOX, row, col);
 	
-	return decToBin(sBoxVal);
+	/*really dirty hack around here*/
+	vector<char> sBoxBin = decToBin(sBoxVal);
+	vector<char> ret(4);
+	for(int j = 0; j < 4; j++) ret[j] = sBoxBin[j];
+	
+	return ret;
 }
 
 string getSBox(int& n){
@@ -325,6 +382,21 @@ vector<int> binToInt(vector<char>& v){
 	vector<int> output;
 	
 	while(sstream.good()){
+        std::bitset<6> bits;
+        sstream >> bits;
+        int c = bits.to_ulong();
+        output.push_back(c);
+    }
+	
+	return output;
+}
+
+vector<int> bin8ToInt(vector<char>& v){
+	string str(v.begin(), v.end());
+	stringstream sstream(str);
+	vector<int> output;
+	
+	while(sstream.good()){
         std::bitset<8> bits;
         sstream >> bits;
         int c = bits.to_ulong();
@@ -334,15 +406,67 @@ vector<int> binToInt(vector<char>& v){
 	return output;
 }
 
-vector<char> setToPrintableAscii(vector<int>& v){
-	v.pop_back(); //because it was a string, and we want to get rid the delim
+vector<char> setToPrintableAscii(vector<int> v){
+	//v.pop_back(); //because it was a string, and we want to get rid the delim
 	
 	vector<char> newV;
 	for(int i = 0; i < v.size(); i++){
-		v[i] = (v[i] % 95) + 32;
+		v[i] = (v[i] + 62);
 		newV.push_back(v[i]);
 	}
 	
+	return newV;
+}
+
+vector<int> revertPrintableAscii(vector<char> v){
+	vector<int> newV;
+	for(int i = 0; i < v.size(); i++){
+		v[i] = (v[i] - 62);
+		newV.push_back(v[i]);
+	}
+	
+	return newV;
+}
+
+vector<char> strToVectorChar(string& str){
+	vector<char> newV;
+	for(int i = 0; i < str.size(); i++){
+		newV.push_back(str[i]);
+	}
+	newV.pop_back(); //get rid of the delim
+	
+	return newV;
+}
+
+/*convert int to binary of 6 bits*/
+vector<char> decToBin6(int& n){
+	vector<char> bin(6);
+	for(int i = 0; i < 6; i++){
+		char bit;
+		(n % 2)? bit = '1':bit = '0';
+		bin.insert(bin.begin(), bit);
+		
+		n /= 2;
+	}
+	
+	return bin;
+}
+
+vector<char> intToBin(vector<int>& v){
+	vector<char> newV;
+	for(int i = 0; i < v.size(); i++){
+		vector<char> binaries;
+		if(i != v.size()-1) {
+			vector<char> tmp = decToBin6(v[i]);
+			for(int i = 0; i < 6; i++) binaries.push_back(tmp[i]); //OH YOU BAD BOY!
+		} else {
+			vector<char> tmp = decToBin(v[i]);
+			for(int i = 0; i < 4; i++) binaries.push_back(tmp[i]); //OH YOU BAD BOY!
+		}
+		newV = concat(newV, binaries);
+	}
+	
+	//there's a really bad hacks in here, because of the last bit should be in 4 bit and the decToBin method is kinda broken
 	return newV;
 }
 
@@ -359,4 +483,20 @@ vector<char> DESencrypt(string& key, string& plaintext){
 	vector<char> cipherText = setToPrintableAscii(asciiSet);
 	
 	return cipherText;
+}
+
+vector<char> DESdecrypt(string& key, string& ciphertext){
+	vector<char> binKey = strToBinary(key);
+				 binKey = addPadding(binKey);
+	vector<char> kPlus = generateKPlus(binKey);
+	vector<char> cipherVector = strToVectorChar(ciphertext);
+	vector<int>  asciiSet = revertPrintableAscii(cipherVector);
+	vector<char> binCiphertext = intToBin(asciiSet);
+	vector<char> IP = initialPermutation(binCiphertext);
+	vector<char> roundResult = roundsInv(IP, kPlus); 
+	vector<char> IPInv = invInitialPermutation(roundResult);
+				 asciiSet = bin8ToInt(IPInv);
+	vector<char> plainText(asciiSet.begin(), asciiSet.end());
+
+	return plainText;
 }
