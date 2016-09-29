@@ -10,7 +10,7 @@
 using namespace std;
 
 /*Env variables*/
-const string ROOT_DIR = "/home/fengkiej/Documents/PrakASD/DESImplementation/";
+const string ROOT_DIR = "/home/fengkiej/Documents/PrakASD/DESImplementation/folder for git/DES-Implementation-in-C-/";
 const string EBIT = "e-bit.txt";
 const string INIT_PERMUTATION = "ip.txt";
 const string INIT_PERMUTATION_INV = "ip-1.txt";
@@ -59,6 +59,7 @@ vector<char> subvectToSBoxN(int&, vector<char>&);
 vector<char> putToSBoxes(vector<char>&);
 vector<char> invInitialPermutation(vector<char>&);
 vector<char> rounds(vector<char>&, vector<char>&);
+vector<char> roundsInv(vector<char>&, vector<char>&);
 vector<char> DESencrypt(string&, string&);
 vector<char> DESdecrypt(string&, string&);
 string getSBox(int&);
@@ -236,7 +237,6 @@ vector<char> rounds(vector<char>& v, vector<char>& kPlus){
 	return concat(R, L);
 }
 
-//not in header yet
 vector<char> roundsInv(vector<char>& v, vector<char>& kPlus){
 	vector<char> L = vectorLo(v);
 	vector<char> R = vectorHi(v);
@@ -259,9 +259,8 @@ vector<char> feistel(vector<char>& v, vector<char>& K){
 	vector<char> eV = expand(v);	
 	vector<char> B = xorVect(K, eV);
 	vector<char> SB = putToSBoxes(B);
-	vector<char> P = rearrangeVector(SB, PERMUTATION, 32);
 	
-	return P;
+	return rearrangeVector(SB, PERMUTATION, 32);
 }
 
 vector<char> expand(vector<char>& v){
@@ -382,7 +381,7 @@ vector<int> binToInt(vector<char>& v){
 	vector<int> output;
 	
 	while(sstream.good()){
-        std::bitset<6> bits;
+        std::bitset<6> bits; //Take per 6 bits to avoid extended ascii and nonprintable ascii char
         sstream >> bits;
         int c = bits.to_ulong();
         output.push_back(c);
@@ -411,7 +410,7 @@ vector<char> setToPrintableAscii(vector<int> v){
 	
 	vector<char> newV;
 	for(int i = 0; i < v.size(); i++){
-		v[i] = (v[i] + 62);
+		v[i] = (v[i] + 62); //add 62 to the biggest char is '~' (ascii: 126) 
 		newV.push_back(v[i]);
 	}
 	
@@ -474,8 +473,10 @@ vector<char> DESencrypt(string& key, string& plaintext){
 	vector<char> binKey = strToBinary(key);
 				 binKey = addPadding(binKey);
 	vector<char> kPlus = generateKPlus(binKey);
+
  	vector<char> binPlaintext = strToBinary(plaintext);
 				 binPlaintext = addPadding(binPlaintext);
+
 	vector<char> IP = initialPermutation(binPlaintext);
 	vector<char> roundResult = rounds(IP, kPlus); 
 	vector<char> IPInv = invInitialPermutation(roundResult);
@@ -488,10 +489,13 @@ vector<char> DESencrypt(string& key, string& plaintext){
 vector<char> DESdecrypt(string& key, string& ciphertext){
 	vector<char> binKey = strToBinary(key);
 				 binKey = addPadding(binKey);
+
 	vector<char> kPlus = generateKPlus(binKey);
+
 	vector<char> cipherVector = strToVectorChar(ciphertext);
 	vector<int>  asciiSet = revertPrintableAscii(cipherVector);
 	vector<char> binCiphertext = intToBin(asciiSet);
+
 	vector<char> IP = initialPermutation(binCiphertext);
 	vector<char> roundResult = roundsInv(IP, kPlus); 
 	vector<char> IPInv = invInitialPermutation(roundResult);
