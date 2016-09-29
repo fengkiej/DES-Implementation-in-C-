@@ -10,7 +10,7 @@
 using namespace std;
 
 /*Env variables*/
-const string ROOT_DIR = "/home/fengkiej/Documents/PrakASD/DESImplementation/folder for git/DES-Implementation-in-C-/";
+const string ROOT_DIR = ""; //edit this to where all below files are located
 const string EBIT = "e-bit.txt";
 const string INIT_PERMUTATION = "ip.txt";
 const string INIT_PERMUTATION_INV = "ip-1.txt";
